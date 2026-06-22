@@ -6,7 +6,7 @@
   <title>ClaudeClaw Canvas</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="canvas.css">
+  <link rel="stylesheet" href="canvas.css?v=4">
 </head>
 <body>
   <div id="canvas-container">
@@ -15,11 +15,16 @@
         <span id="status">Connecting...</span>
         <span id="last-updated"></span>
       </div>
+      <div id="header-right">
+        <button id="font-down" class="font-btn" title="Smaller text">A−</button>
+        <span style="color:#475569;font-size:10px">v4</span>
+        <button id="font-up" class="font-btn" title="Larger text">A+</button>
+      </div>
     </header>
     <main id="content">
       <div class="empty-state">Waiting for content...</div>
     </main>
   </div>
-  <script src="canvas.js"></script>
+  <script src="canvas.js?v=4"></script>
 </body>
 </html>

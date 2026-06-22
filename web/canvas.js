@@ -19,6 +19,23 @@
     tg.expand();
   }
 
+  // ── Font size controls (uses CSS zoom to override inline styles) ─────
+  var zoomLevel = parseFloat(localStorage.getItem('canvasZoom') || '1.0');
+  contentEl.style.zoom = String(zoomLevel);
+
+  var fontDown = document.getElementById('font-down');
+  var fontUp = document.getElementById('font-up');
+  if (fontDown) fontDown.addEventListener('click', function () {
+    zoomLevel = Math.max(0.6, zoomLevel - 0.15);
+    contentEl.style.zoom = String(zoomLevel);
+    localStorage.setItem('canvasZoom', String(zoomLevel));
+  });
+  if (fontUp) fontUp.addEventListener('click', function () {
+    zoomLevel = Math.min(2.5, zoomLevel + 0.15);
+    contentEl.style.zoom = String(zoomLevel);
+    localStorage.setItem('canvasZoom', String(zoomLevel));
+  });
+
   // ── Parse URL params ─────────────────────────────────────────────────
   var params = new URLSearchParams(window.location.search);
   var chatId = params.get('chatId') || '';

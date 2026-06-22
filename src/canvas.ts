@@ -1,11 +1,3 @@
-/**
- * Canvas Channel — in-memory state management for the ClaudeClaw Canvas.
- *
- * Manages per-tenant ring buffers of pushed content and provides
- * event subscription for real-time SSE streaming to the Mini App.
- * Also handles Telegram initData HMAC-SHA256 validation.
- */
-
 import crypto from 'node:crypto';
 import { EventEmitter } from 'node:events';
 
@@ -115,34 +107,41 @@ export function validateTelegramInitData(
     const hash = params.get('hash');
     if (!hash) return null;
 
+    // Remove hash from params for verification
     params.delete('hash');
 
+    // Sort remaining params alphabetically and join with newlines
     const dataCheckString = [...params.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([k, v]) => `${k}=${v}`)
       .join('\n');
 
+    // Secret key = HMAC-SHA256("WebAppData", bot_token)
     const secretKey = crypto
       .createHmac('sha256', 'WebAppData')
       .update(botToken)
       .digest();
 
+    // Computed hash = HMAC-SHA256(secret_key, data_check_string)
     const computedHash = crypto
       .createHmac('sha256', secretKey)
       .update(dataCheckString)
       .digest('hex');
 
+    // Constant-time comparison
     if (hash.length !== computedHash.length) return null;
     if (!crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(computedHash))) {
       return null;
     }
 
+    // Check auth_date freshness
     const authDate = params.get('auth_date');
     if (authDate) {
       const age = Math.floor(Date.now() / 1000) - parseInt(authDate, 10);
       if (age > maxAgeSeconds) return null;
     }
 
+    // Parse user
     const userStr = params.get('user');
     if (!userStr) return null;
 

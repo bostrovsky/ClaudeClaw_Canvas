@@ -1,22 +1,24 @@
 /**
  * Canvas Middleware — single entry point for the canvas response pipeline.
  *
- * Call processCanvasResponse() from your bot's response handler.
+ * Call processCanvasResponse() from bot.ts's response handler.
  * It handles: marker extraction, markdown-to-HTML conversion,
  * canvas push, PNG rendering, and Telegram photo sending.
  *
  * Returns the text to send as a Telegram message (with structured
- * content stripped out, since the PNG image covers it).
+ * content stripped out, since the PNG covers it).
  */
 
 import fs from 'fs';
 import { type Context, InputFile } from 'grammy';
+import { CANVAS_URL } from './config.js';
 import { emitCanvasEvent } from './canvas.js';
 import { renderHtmlToPng } from './canvas-render.js';
 import { extractCanvasMarkers, markdownToCanvasHtml, stripStructuredContent } from './canvas-transform.js';
+import { logger } from './logger.js';
 
 export interface CanvasResult {
-  /** Text to send as a Telegram message (empty if PNG was sent) */
+  /** Text to send as a Telegram message (structured content stripped if PNG was sent) */
   telegramText: string;
   /** Whether a PNG image was sent to the chat */
   pngSent: boolean;
@@ -36,9 +38,9 @@ export async function processCanvasResponse(
   responseText: string,
   chatId: string,
   ctx: Context,
-  canvasUrl: string,
 ): Promise<CanvasResult> {
-  if (!canvasUrl) {
+  // If canvas isn't configured, pass through unchanged
+  if (!CANVAS_URL) {
     return { telegramText: responseText, pngSent: false };
   }
 
@@ -69,20 +71,22 @@ export async function processCanvasResponse(
     const pngPath = await renderHtmlToPng(htmlContent);
     if (pngPath) {
       const { InlineKeyboard } = await import('grammy');
-      const url = `${canvasUrl}${canvasUrl.includes('?') ? '&' : '?'}chatId=${chatId}&v=${Date.now()}`;
-      const keyboard = new InlineKeyboard().webApp('Open in Canvas', url);
+      const canvasUrl = `${CANVAS_URL}${CANVAS_URL.includes('?') ? '&' : '?'}chatId=${chatId}&v=${Date.now()}`;
+      const keyboard = new InlineKeyboard().webApp('Open in Canvas', canvasUrl);
 
       await ctx.replyWithPhoto(new InputFile(pngPath), { reply_markup: keyboard });
       pngSent = true;
       fs.unlink(pngPath, () => {});
     }
   } catch (err) {
-    console.error('Canvas PNG send failed, falling back to text:', err);
+    logger.error({ err }, 'Canvas PNG send failed, falling back to text');
   }
 
+  // Step 4: Return appropriate text for Telegram
   if (pngSent) {
     return { telegramText: '', pngSent: true };
   }
 
+  // PNG failed — send stripped text as fallback
   return { telegramText: stripStructuredContent(afterMarkers), pngSent: false };
 }
