@@ -182,8 +182,13 @@ Each canvas server is independent. Expose each port separately via Tailscale Fun
 
 ## Known Limitations
 
+- **Same-machine access (Tailscale Funnel hairpin).** If you run ClaudeClaw and Telegram Desktop on the **same machine**, the canvas Mini App will not load. Tailscale Funnel cannot route traffic from a machine back to itself -- the request goes out to Tailscale's relay servers and times out trying to loop back. **This affects anyone running ClaudeClaw on their daily-use workstation.** The canvas works fine from phones, tablets, and other computers on your network. Workarounds:
+  - Use the canvas from your phone or a second computer (recommended)
+  - Use Cloudflare Tunnel instead of Tailscale Funnel (CF Tunnel doesn't have the hairpin issue because `cloudflared` runs locally and handles both local and remote traffic)
+  - The install script sets up an HTTPS localhost fallback on port `CANVAS_PORT + 100` (e.g. 3244) using mkcert. You can open `https://localhost:3244?chatId=YOUR_CHAT_ID&token=YOUR_BOT_TOKEN` in a browser, but this doesn't help Telegram Desktop since the bot's menu button URL is global across all devices.
+
 - **Canvas state is in-memory.** Content doesn't survive service restarts. Old "Open in Canvas" buttons show blank after a restart. SQLite persistence is planned.
-- **Tailscale Funnel hairpin.** The machine running the canvas server can't open the canvas via its own funnel URL (same-machine loopback fails). Use a different device, or access via localhost for development.
+
 - **Telegram WebView caching.** The Mini App HTML/JS/CSS is aggressively cached by Telegram. Version params (`?v=N`) on asset URLs help. If the canvas shows stale content, close and reopen it.
 
 ## Requirements
