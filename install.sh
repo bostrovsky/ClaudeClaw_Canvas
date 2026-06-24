@@ -19,23 +19,6 @@ if [ ! -f "$CLAW_DIR/src/bot.ts" ] || [ ! -f "$CLAW_DIR/src/index.ts" ]; then
   exit 1
 fi
 
-# ── DEPRECATED: Canvas is now a built-in plugin ───────────────────────
-# This sed-based installer copies files into src/ and patches bot.ts/
-# config.ts/index.ts. It exists only for ClaudeClaw versions that predate
-# the plugin loader. On a current ClaudeClaw OS, Canvas already ships in
-# plugins/canvas/ — just set CANVAS_URL/CANVAS_PORT in .env and rebuild.
-if [ -f "$CLAW_DIR/plugins/canvas/plugin.ts" ] || [ -f "$CLAW_DIR/plugins/canvas/plugin.js" ]; then
-  echo "Canvas is already built in as a plugin (plugins/canvas/). The sed-based"
-  echo "installer is deprecated and unnecessary here. To enable Canvas:"
-  echo "  1. set CANVAS_URL / CANVAS_PORT in your tenant .env"
-  echo "  2. tailscale funnel --bg --https=3144 http://127.0.0.1:3144"
-  echo "  3. npx playwright install chromium"
-  echo "  4. npm run build && restart the tenant"
-  echo "See docs/PLUGINS.md. Re-run with CANVAS_FORCE_LEGACY_INSTALL=1 to override."
-  [ "${CANVAS_FORCE_LEGACY_INSTALL:-}" = "1" ] || exit 1
-fi
-
-echo "WARNING: running the DEPRECATED sed-based Canvas installer."
 echo "Installing ClaudeClaw Canvas into $CLAW_DIR"
 
 # ── Copy source files ────────────────────────────────────────────────
