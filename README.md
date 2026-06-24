@@ -1,5 +1,21 @@
 # ClaudeClaw Canvas
 
+> [!IMPORTANT]
+> **Canvas is now a built-in plugin in ClaudeClaw OS** (`plugins/canvas/`), loaded
+> through the plugin architecture. **You no longer clone this repo or run
+> `install.sh`** — there are no file copies into `src/` and no `sed` patches.
+>
+> **To enable Canvas on a current ClaudeClaw OS:**
+> 1. Set `CANVAS_URL` and `CANVAS_PORT` in your tenant `.env`
+> 2. Expose the port: `tailscale funnel --bg --https=3144 http://127.0.0.1:3144`
+> 3. Install the renderer: `npx playwright install chromium`
+> 4. `npm run build` and restart the tenant
+>
+> See `docs/PLUGINS.md` in claudeclaw-os for the plugin architecture. This repo is
+> kept for history and reference. The `sed`-based `install.sh` remains only as a
+> legacy fallback for ClaudeClaw versions that predate the plugin loader; it is
+> deprecated and will be removed.
+
 Rich content rendering for [ClaudeClaw](https://github.com/openclaw/openclaw) via Telegram Mini App. Agent responses with structured data are automatically converted to styled visuals -- tables, charts, code blocks, formatted lists -- delivered as PNG images directly in the Telegram chat, with an interactive Mini App canvas for zooming and scrolling.
 
 Inspired by [OpenClaw tg-canvas](https://github.com/clvv/openclaw-tg-canvas).
@@ -17,16 +33,10 @@ When an agent responds with structured data (tables, key:value lists, code block
 
 The user sees a clean rendered image in chat. Tapping "Open in Canvas" shows the interactive version with zoom controls.
 
-## Quick Install
+## Enable Canvas (current ClaudeClaw OS)
 
-From your ClaudeClaw OS root directory:
-
-```bash
-git clone https://github.com/bostrovsky/ClaudeClaw_Canvas.git
-bash ClaudeClaw_Canvas/install.sh
-```
-
-The install script copies source files, patches config/index/bot.ts, installs Playwright chromium, and builds. Then:
+Canvas ships as a built-in plugin (`plugins/canvas/`). There's nothing to clone
+and no `install.sh` to run — just configure and build:
 
 1. Add to your tenant `.env`:
    ```
@@ -39,11 +49,33 @@ The install script copies source files, patches config/index/bot.ts, installs Pl
    tailscale funnel --bg --https=3144 http://127.0.0.1:3144
    ```
 
-3. Wire `processCanvasResponse()` into bot.ts (see [Integration](#integration) below)
+3. Install the renderer (once per machine):
+   ```bash
+   npx playwright install chromium
+   ```
 
-4. Restart your service
+4. Build and restart:
+   ```bash
+   npm run build
+   launchctl kickstart -k gui/$(id -u)/com.claudeclaw.<tenant>
+   ```
 
-**Or** give your ClaudeClaw agent the repo URL and let it install itself -- the included `SKILL.md` guides the agent through the full setup.
+The plugin registers its `/canvas` command, menu button, and response pipeline
+automatically — no `bot.ts` wiring. Confirm it loaded with the
+`[plugin] loaded canvas@1.0.0` line in the startup log.
+
+<details>
+<summary>Legacy <code>sed</code>-based install (deprecated — pre-plugin ClaudeClaw only)</summary>
+
+```bash
+git clone https://github.com/bostrovsky/ClaudeClaw_Canvas.git
+bash ClaudeClaw_Canvas/install.sh   # copies files into src/, sed-patches bot.ts/config.ts/index.ts
+```
+
+This path exists only for ClaudeClaw versions that predate the plugin loader.
+It is deprecated and will be removed. On any current ClaudeClaw OS, use the
+plugin (above) instead.
+</details>
 
 ## What Gets Rendered
 
@@ -115,6 +147,12 @@ canvas-transform.ts: detect structured content, convert to styled HTML
 | `SKILL.md` | Agent-readable install instructions (give your bot the repo URL) |
 
 ## Integration
+
+> [!NOTE]
+> The manual wiring below applied to the old `src/`-copy install. The plugin form
+> (`plugins/canvas/`) does this for you via `ctx.registerResponseMiddleware` — no
+> `bot.ts` edits. The section is kept as a description of what Canvas does under
+> the hood.
 
 ### Bot response pipeline
 
